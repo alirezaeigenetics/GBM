@@ -4,6 +4,10 @@ This repository contains reproducible R scripts for the automated download, qual
 
 The pipeline processes raw transcriptomic data into normalized expression matrices and identifies significant differentially expressed genes (DEGs). It also outputs standardized, Z-score normalized datasets formatted for downstream Machine Learning (ML) integration.
 
+## Usage Instructions
+
+Important: To ensure all file paths and relative directories resolve correctly, you must open the Main.Rproj file in RStudio first. Once the project environment is loaded, you can proceed to open and run the individual R scripts located inside each dataset-specific folder.
+
 ## Repository Structure
 ```text
 GBM/

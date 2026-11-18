@@ -47,7 +47,7 @@ GBM/
 3. Each script will automatically:
    * Download raw data and clinical metadata from GEO or TCGA-GDC.
    * Perform platform-specific normalization (RMA, quantile normalization, or `rlog`) and differential expression analysis (`limma` or `DESeq2`).
-   * Save high-resolution vector visualizations (`.svg`), including Boxplots, PCA, UMAP, Volcano plots, Heatmaps, and Scatter plots.
+   * Save high-resolution vector visualizations (`.svg`), including Boxplot, PCA, UMAP, Mean-Variance, Mean-Difference, Quantile-Quantile plot, Volcano plot, Adjusted p-value histogram, Venn diagram, Heatmap, Density plot, and Scatter plot.
    * Export a Z-score normalized `*_ML_Ready.csv` file inside each dataset folder.
    * *(TCGA only)* Run Kaplan-Meier survival analysis with MaxStat optimal cutpoints and compute the multivariate **Exo-GBM Prognostic Index (EGPI)**.
 

@@ -39,17 +39,18 @@ query_TCGA <- GDCquery(project = "TCGA-GBM",
 
 query_result <- getResults(query_TCGA)
 write.table(query_result, file = file.path(base_dir, "all_samples_of_GBM.txt"), quote = FALSE, sep = "\t")
-
+write.csv(query_result, file = file.path(base_dir, "all_samples_of_GBM.csv"), quote = FALSE, row.names = FALSE)
 # Isolate Normal and Tumor samples
 normal_sample_list <- subset(query_result, sample_type == "Solid Tissue Normal" & experimental_strategy == "miRNA-Seq")
 write.table(normal_sample_list, file = file.path(base_dir, "all_normal_samples_of_GBM.txt"), quote = FALSE, sep = "\t")
-
+write.csv(normal_sample_list, file = file.path(base_dir, "all_normal_samples_of_GBM.csv"), quote = FALSE, row.names = FALSE)
 Tumor_sample_list <- subset(query_result, sample_type == "Primary Tumor" & experimental_strategy == "miRNA-Seq")
 write.table(Tumor_sample_list, file = file.path(base_dir, "all_tumor_samples_of_GBM.txt"), quote = FALSE, sep = "\t")
-
+write.csv(Tumor_sample_list, file = file.path(base_dir, "all_tumor_samples_of_GBM.csv"), quote = FALSE, row.names = FALSE)
 # Combine the sample barcodes
 all_GBM_samples <- c(normal_sample_list$cases, Tumor_sample_list$cases)
 write.table(all_GBM_samples, file = file.path(base_dir, "all_GBM_access_status.txt"), quote = FALSE, row.names = FALSE, col.names = FALSE, sep = "\t")
+write.csv(all_GBM_samples, file = file.path(base_dir, "all_GBM_access_status.csv"), quote = FALSE, row.names = FALSE)
 
 selected_sample_vec <- read.table(file.path(base_dir, "all_GBM_access_status.txt"))[[1]]
 query_TCGA_2 <- GDCquery(project = "TCGA-GBM",
@@ -66,16 +67,19 @@ data_prepare <- GDCprepare(query_TCGA_2,
                            save.filename = file.path(base_dir, "data.rda"))
 
 write.table(data_prepare, file.path(base_dir, "Raw_data.txt"), quote=FALSE, sep="\t", row.names = FALSE)
+write.csv(data_prepare, file.path(base_dir, "Raw_data.csv"), quote=FALSE, row.names = FALSE)
 
 miRNA_col <- data_prepare[, 1, drop = FALSE] 
 count_cols <- data_prepare[, grepl("^read_count_", colnames(data_prepare))]
 df_counts <- cbind(miRNA_col, count_cols)
 write.table(df_counts, file.path(base_dir, "GBM_miRNA_counts_only.txt"), sep = "\t", quote = FALSE, row.names = FALSE)
+write.csv(df_counts, file.path(base_dir, "GBM_miRNA_counts_only.csv"), quote = FALSE, row.names = FALSE)
 
 miRNA_names <- as.character(df_counts[[1]])
 rownames(df_counts) <- miRNA_names
 df_counts <- df_counts[,-1]
 write.table(df_counts, file.path(base_dir, "df_counts.txt"), quote = FALSE, sep = "\t")
+write.csv(df_counts, file.path(base_dir, "df_counts.csv"), quote = FALSE)
 
 # ==============================================================================
 # 3. PREPROCESSING & DIFFERENTIAL EXPRESSION (DESeq2)
@@ -94,6 +98,7 @@ keep <- filterByExpr(y)
 y <- y[keep, , keep.lib.sizes = FALSE]
 
 write.table(cbind(miRNA_ID = rownames(y), y$counts), file = file.path(base_dir, "GBM_miRNA_filtered.txt"), sep = "\t", quote = FALSE, row.names = FALSE)
+write.csv(cbind(miRNA_ID = rownames(y), y$counts), file = file.path(base_dir, "GBM_miRNA_filtered.csv"), quote = FALSE, row.names = FALSE)
 
 data_filtered <- read.table(file.path(base_dir, "GBM_miRNA_filtered.txt"), header = TRUE, row.names = 1, check.names = FALSE)
 selected_sample <- colnames(data_filtered)
@@ -101,6 +106,7 @@ sample_type <- ifelse(substr(selected_sample, 14, 15) == "11", "Normal", ifelse(
 
 sample_info <- data.frame(selected_sample = selected_sample, sample_type = sample_type, stringsAsFactors = FALSE)
 write.table(sample_info, file.path(base_dir, "MetaData.txt"), quote = FALSE, sep = "\t", row.names = FALSE)
+write.csv(sample_info, file.path(base_dir, "MetaData.csv"), quote = FALSE, row.names = FALSE)
 
 data_filtered2 <- as.data.frame(lapply(data_filtered, as.numeric), row.names = rownames(data_filtered))
 
@@ -109,16 +115,19 @@ d1 <- DESeqDataSetFromMatrix(countData = data_filtered2, colData = sample_info, 
 data_rlog <- rlogTransformation(d1)
 data_rlog_df <- data.frame(assay(data_rlog))
 write.table(data_rlog_df, file.path(base_dir, "rLog_Data.txt"), quote = FALSE, sep = "\t")
+write.csv(data_rlog_df, file.path(base_dir, "rLog_Data.csv"), quote = FALSE)
 
 d2 <- estimateSizeFactors(d1)
 d3 <- DESeq(d2)
 
 deseq_result <- results(d3, pAdjustMethod = "fdr")
 final_result <- data.frame(deseq_result)
-write.table(final_result, file.path(base_dir, "DEG.txt"), quote = FALSE, sep = "\t")
+write.table(final_result, file.path(base_dir, "DE_miRNAs.txt"), quote = FALSE, sep = "\t")
+write.csv(final_result, file.path(base_dir, "TCGA_DE_miRNAs.csv"), quote = FALSE) 
 
 final_result_sort <- final_result[order(final_result$padj, decreasing = FALSE),]
 write.table(final_result_sort, file.path(base_dir, "Final_Result_sorted.txt"), quote = FALSE, sep = "\t")
+write.csv(final_result_sort, file.path(base_dir, "Final_Result_sorted.csv"), quote = FALSE)
 
 data_rlog_df2 <- as.matrix(read.table(file.path(base_dir, "rLog_Data.txt"), sep = "\t", header = TRUE, row.names = 1))
 
@@ -519,16 +528,28 @@ for (mirna in target_mirna) {
   }
 }
 
-# Exo-GBM Prognostic Index (EGPI) Custom Risk Score
+# GBM miRNA Prognostic Index (GMPI) Custom Risk Score
 formula_str <- paste0("Surv(time = OS_time, event = OS_status) ~ `", paste(target_mirna, collapse = "` + `"), "` + age")
 cox_formula <- as.formula(formula_str)
 cox_model <- coxph(cox_formula, data = merged_data)
 
-merged_data$EGPI <- predict(cox_model, type = "risk")
-res.cut_egpi <- surv_cutpoint(merged_data, time = "OS_time", event = "OS_status", variables = "EGPI", minprop = 0.2)
-res.cat_egpi <- surv_categorize(res.cut_egpi)
-merged_data$EGPI_Group <- factor(res.cat_egpi$EGPI, levels = c("low", "high"))
+merged_data$GMPI <- predict(cox_model, type = "risk")
+res.cut_gmpi <- surv_cutpoint(merged_data, time = "OS_time", event = "OS_status", variables = "GMPI", minprop = 0.2)
+res.cat_gmpi <- surv_categorize(res.cut_gmpi)
+merged_data$GMPI_Group <- factor(res.cat_gmpi$GMPI, levels = c("low", "high"))
 
-fit_opt_egpi <- survfit(Surv(time = OS_time, event = OS_status) ~ EGPI_Group, data = merged_data)
-p_opt_egpi <- ggsurvplot(fit_opt_egpi, data = merged_data, pval = TRUE, conf.int = TRUE, risk.table = TRUE, palette = c("#2E9FDF", "#E7B800"), title = "Survival: Exo-GBM Prognostic Index (EGPI)")
-svg(filename = file.path(base_dir, "Plot_14_KM_Multivariate_EGPI_Optimal_Cutpoint.svg"), width = 8, height = 7); print(p_opt_egpi); dev.off()
+fit_opt_gmpi <- survfit(Surv(time = OS_time, event = OS_status) ~ GMPI_Group, data = merged_data)
+p_opt_gmpi <- ggsurvplot(
+  fit_opt_gmpi,
+  data = merged_data,
+  pval = TRUE,
+  conf.int = TRUE,
+  risk.table = TRUE,
+  palette = c("#2E9FDF", "#E7B800"),
+  legend.title = "GMPI Category",
+  legend.labs = c("Low GMPI", "High GMPI"),
+  title = "Survival: GBM miRNA Prognostic Index (GMPI)"
+)
+svg(filename = file.path(base_dir, "Plot_14_KM_Multivariate_GMPI_Optimal_Cutpoint.svg"), width = 8, height = 7)
+print(p_opt_gmpi)
+dev.off()

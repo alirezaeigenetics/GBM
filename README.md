@@ -13,7 +13,7 @@ GBM/
 ├── Main.Rproj                    # Main RStudio Project file (OPEN THIS FIRST)
 ├── README.md                     # Project documentation
 ├── LICENSE                       # Repository license
-├── ML v.1.1.1.py                 # Unified Python pipeline (Merge, CV, Ablation, LODO & SHAP)
+├── ML_pipeline.py                # Unified Python pipeline (Merge, CV, Ablation, LODO & SHAP)
 ├── ML_Outputs/                   # Auto-generated folder for high-res (.png & .svg) figures
 ├── GSE61710/                     # GEO microarray dataset & analysis script (peritumoral excluded for ML)
 ├── GSE65626/                     # GEO microarray dataset & analysis script
@@ -59,9 +59,9 @@ GBM/
    - Fisher's Combined Probability Test results (`MetaAnalysis_Fisher_Results.csv`) and a labeled meta-volcano plot (`MetaAnalysis_Custom_Volcano_Labeled`).
 
 ### Step 3: Unified Machine Learning, LODO Validation & Explainable AI (Python)
-Run `ML v.1.1.1.py` from the root directory:
+Run `ML_pipeline.py` from the root directory:
 ```bash
-python "ML v.1.1.1.py"
+python "ML_pipeline.py"
 ```
 This unified, fully deterministic script executes four sequential modules:
 1. **Automated Cohort Merging**: Recursively scans all dataset subfolders for `*_ML_Ready.csv` files, tags each sample with its source cohort (`Dataset` column), performs an inner join to retain only universally detected (conserved) miRNAs across all seven cohorts, and outputs `MASTER_GBM_DATASET.csv`.
